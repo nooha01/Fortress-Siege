@@ -1,19 +1,20 @@
 import pygame
 import os
+import random
 
 pygame.init()
 win_height = 400
-win_width = 800
+win_width = 1000
 win = pygame.display.set_mode((win_width, win_height))
 
-stationary = pygame.image.load(os.path.join("Assets/Hero", "standing.png"))
+#Hero
 left = [pygame.image.load(os.path.join("Assets/Hero", "L1.png")),
         pygame.image.load(os.path.join("Assets/Hero", "L2.png")),
         pygame.image.load(os.path.join("Assets/Hero", "L3.png")),
         pygame.image.load(os.path.join("Assets/Hero", "L4.png")),
         pygame.image.load(os.path.join("Assets/Hero", "L5.png")),
         pygame.image.load(os.path.join("Assets/Hero", "L6.png")),
-        pygame.image.load(os.path.join("Assets/Hero", "L7.png")),
+        pygame.image.load(os.path.join("Assets/Hero", "L7.png"))
         ]
 right =[pygame.image.load(os.path.join("Assets/Hero", "R1.png")),
         pygame.image.load(os.path.join("Assets/Hero", "R2.png")),
@@ -21,7 +22,25 @@ right =[pygame.image.load(os.path.join("Assets/Hero", "R1.png")),
         pygame.image.load(os.path.join("Assets/Hero", "R4.png")),
         pygame.image.load(os.path.join("Assets/Hero", "R5.png")),
         pygame.image.load(os.path.join("Assets/Hero", "R6.png")),
-        pygame.image.load(os.path.join("Assets/Hero", "R7.png")),
+        pygame.image.load(os.path.join("Assets/Hero", "R7.png"))
+        ]
+
+# Enemy
+left_enemy = [pygame.image.load(os.path.join("Assets/Enemy", "L1E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L2E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L3E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L4E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L5E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L6E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "L7E.png")),
+        ]
+right_enemy = [pygame.image.load(os.path.join("Assets/Enemy", "R1E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R2E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R3E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R4E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R5E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R6E.png")),
+        pygame.image.load(os.path.join("Assets/Enemy", "R7E.png")),
         ]
 
 bullet_img = pygame.transform.scale(pygame.image.load(os.path.join("Assets/Bullet", "bullet.png")), (10, 10))
@@ -38,6 +57,7 @@ class Hero:
         self.stepIndex = 0
         self.jump = False
         self.bullets = []
+        self.cool_down_count = 0
 
     def move_hero(self, userInput):
         if userInput[pygame.K_RIGHT] and self.x <= win_width - 62:
@@ -77,12 +97,22 @@ class Hero:
         if self.face_left:
             return -1
 
+    def cooldown(self):
+        if self.cool_down_count >= 20:
+            self.cool_down_count = 0
+        elif self.cool_down_count > 0:
+            self.cool_down_count += 1
+
     def fire(self):
-        if userInput[pygame.K_f]:
+        self.cooldown()
+        if (userInput[pygame.K_f] and self.cool_down_count == 0):
             bullet = Bullet(self.x, self.y, self.direction())
             self.bullets.append(bullet)
+            self.cool_down_count = 1
         for bullet in self.bullets:
             bullet.move()
+            if bullet.off_screen():
+                self.bullets.remove(bullet)
 
 class Bullet:
     def __init__(self, x, y, direction):
@@ -95,9 +125,40 @@ class Bullet:
 
     def move(self):
         if self.direction == 1:
-            self.x += 13
+            self.x += 15
         if self.direction == -1:
-            self.x -= 13
+            self.x -= 15
+
+    def off_screen(self):
+        return not(self.x >= 0 and self.x <= win_width)
+
+class Enemy:
+    def __init__(self, x, y, direction):
+        self.x = x
+        self.y = y
+        self.direction = direction
+        self.stepIndex = 0
+
+    def step(self):
+        if self.stepIndex >= 7:
+            self.stepIndex = 0
+
+    def draw(self, win):
+        self.step()
+        if self.direction == left:
+            win.blit(left_enemy[0], (self.x, self.y))
+        if self.direction == right:
+            win.blit(right_enemy[self.stepIndex // 3], (self.x, self.y))
+        self.stepIndex += 1
+
+    def move(self):
+        if self.direction == left:
+            self.x -= 3
+        if self.direction == right:
+            self.x += 3
+
+    def off_screen(self):
+        return not(self.x >= -50 and self.x <= win_width + 50)
 
 def draw_game():
     win.fill((0, 0, 0))
@@ -105,10 +166,13 @@ def draw_game():
     player.draw(win)
     for bullet in player.bullets:
         bullet.draw_bullet()
+    for enemy in enemies:
+        enemy.draw(win)
     pygame.time.delay(30)
     pygame.display.update()
 
-player = Hero(250, 290)
+player = Hero(250, 300)
+enemies = []
 
 run = True
 while run:
@@ -119,4 +183,18 @@ while run:
     player.fire()
     player.move_hero(userInput)
     player.jump_motion(userInput)
+
+    if len(enemies) == 0:
+        rand_nr = random.randint(0,1)
+        if rand_nr == 1:
+            enemy = Enemy(750, 300, left)
+            enemies.append(enemy)
+        if rand_nr == 0:
+            enemy = Enemy(50, 300, right)
+            enemies.append(enemy)
+    for enemy in enemies:
+        enemy.move()
+        if enemy.off_screen():
+            enemies.remove(enemy)
+
     draw_game()
