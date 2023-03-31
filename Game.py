@@ -1,6 +1,5 @@
 import pygame
 import os
-import random
 
 pygame.init()
 win_height = 400
@@ -45,13 +44,14 @@ right_enemy = [pygame.image.load(os.path.join("Assets/Enemy", "R1E.png")),
 
 bullet_img = pygame.transform.scale(pygame.image.load(os.path.join("Assets/Bullet", "bullet.png")), (10, 10))
 background = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "Background.jpg")), (win_width, win_height))
+tower = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "lighthouse.png")), (200,200))
 
 class Hero:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.velx = 10
-        self.vely = 10
+        self.vely = 6
         self.face_right = True
         self.face_left = False
         self.stepIndex = 0
@@ -93,11 +93,11 @@ class Hero:
         if userInput[pygame.K_SPACE] and self.jump is False:
             self.jump = True
         if self.jump:
-            self.y -= self.vely*4
+            self.y -= self.vely * 4
             self.vely -= 1
-        if self.vely < -10:
+        if self.vely < -6:
             self.jump = False
-            self.vely = 10
+            self.vely = 6
 
     def direction(self):
         if self.face_right:
@@ -126,10 +126,10 @@ class Hero:
     def hit(self):
         for enemy in enemies:
             for bullet in self.bullets:
-                if enemy.hitbox[0] < bullet.x < enemy.hitbox[0] + enemy.hitbox[2] and enemy.hitbox[1] < bullet.y < enemy.hitbox[1] + enemy.hitbox[3]:
-                    enemy.health -= 1
+                if enemy.hitbox[0] < bullet.x < enemy.hitbox[0] + enemy.hitbox[2] and enemy.hitbox[1] < bullet.y < \
+                        enemy.hitbox[1] + enemy.hitbox[3]:
+                    enemy.health -= 5
                     player.bullets.remove(bullet)
-
 
 class Bullet:
     def __init__(self, x, y, direction):
@@ -147,15 +147,15 @@ class Bullet:
             self.x -= 15
 
     def off_screen(self):
-        return not(self.x >= 0 and self.x <= win_width)
+        return not (self.x >= 0 and self.x <= win_width)
 
 class Enemy:
-    def __init__(self, x, y, direction):
+    def __init__(self, x, y, speed):
         self.x = x
         self.y = y
-        self.direction = direction
+        self.speed = speed
         self.stepIndex = 0
-        self.hitbox = (self.x, self.y, 64, 64) #health
+        self.hitbox = (self.x, self.y, 64, 64) # Health
         self.health = 30
 
     def step(self):
@@ -164,26 +164,21 @@ class Enemy:
 
     def draw(self, win):
         self.hitbox = (self.x + 20, self.y + 10, 60, 60)
-        pygame.draw.rect(win, (255, 0, 0), (self.x +15, self.y, 30, 10))
+        pygame.draw.rect(win, (255, 0, 0), (self.x + 15, self.y, 30, 10))
         if self.health >= 0:
             pygame.draw.rect(win, (0, 255, 0), (self.x + 15, self.y, self.health, 10))
         self.step()
-        if self.direction == left:
-            win.blit(left_enemy[self.stepIndex//3], (self.x, self.y))
-        if self.direction == right:
-            win.blit(right_enemy[self.stepIndex // 3], (self.x, self.y))
+        win.blit(left_enemy[self.stepIndex // 3], (self.x, self.y))
         self.stepIndex += 1
 
     def move(self):
         self.hit()
-        if self.direction == left:
-            self.x -= 3
-        if self.direction == right:
-            self.x += 3
+        self.x -= speed
 
     def hit(self):
-        if player.hitbox[0] < enemy.x + 32 < player.hitbox[0] + player.hitbox[2] and player.hitbox[1] < enemy.y + 32 <player.hitbox[1] + player.hitbox[3]:
-            if player.health >0:
+        if player.hitbox[0] < enemy.x + 32 < player.hitbox[0] + player.hitbox[2] and player.hitbox[1] < enemy.y + 32 < \
+                player.hitbox[1] + player.hitbox[3]:
+            if player.health > 0:
                 player.health -= 1
                 if player.health == 0 and player.lives > 0:
                     player.lives -= 1
@@ -192,36 +187,39 @@ class Enemy:
                     player.alive = False
 
     def off_screen(self):
-        return not(self.x >= -50 and self.x <= win_width + 50)
+        return not (self.x >= -50 and self.x <= win_width + 50)
 
 def draw_game():
     win.fill((0, 0, 0))
-    win.blit(background, (0,0))
+    win.blit(background, (0, 0))
     player.draw(win)
     for bullet in player.bullets:
         bullet.draw_bullet()
     for enemy in enemies:
         enemy.draw(win)
+    win.blit(tower, (-50, 170))
     if player.alive == False:
-        win.fill((0,0,0))
+        win.fill((0, 0, 0))
         font = pygame.font.Font("PirataOne-Regular.ttf", 32)
         text = font.render('You Died! Press R to restart', True, (165, 42, 42))
         textRect = text.get_rect()
-        textRect.center = (win_width//2, win_height//2)
+        textRect.center = (win_width // 2, win_height // 2)
         win.blit(text, textRect)
         if userInput[pygame.K_r]:
             player.alive = True
             player.lives = 1
             player.health = 30
-
     font = pygame.font.Font("PirataOne-Regular.ttf", 32)
-    text = font.render('Lives: '+ str(player.lives), True, (165, 42, 42))
-    win.blit(text, (650, 20))
+    text = font.render('Lives: ' + str(player.lives) + ' | Tower Health: '+ str(tower_health) + ' |Kills: '+ str(kills), True, (165, 42, 42))
+    win.blit(text, (150, 20))
     pygame.time.delay(30)
     pygame.display.update()
 
 player = Hero(250, 290)
 enemies = []
+speed = 3
+kills = 0
+tower_health = 5
 
 run = True
 while run:
@@ -233,15 +231,17 @@ while run:
     player.move_hero(userInput)
     player.jump_motion(userInput)
     if len(enemies) == 0:
-        rand_nr = random.randint(0,1)
-        if rand_nr == 1:
-            enemy = Enemy(750, 300, left)
-            enemies.append(enemy)
-        if rand_nr == 0:
-            enemy = Enemy(50, 300, right)
-            enemies.append(enemy)
+        enemy = Enemy(750, 300, speed)
+        enemies.append(enemy)
+        if speed <= 10:
+            speed += 1
     for enemy in enemies:
         enemy.move()
-        if enemy.off_screen():
+        if enemy.off_screen() or enemy.health == 0:
             enemies.remove(enemy)
+        if enemy.x < 50:
+            enemies.remove(enemy)
+            tower_health -= 1
+        if enemy.health == 0:
+            kills +=1
     draw_game()
