@@ -28,6 +28,13 @@ The game loop starts with user input, updates the hero's position, and checks fo
 3. Run `python Game.py` or `python3 Game.py` on your terminal. 
 4. Enjoy the game. 
 
+## Game Controls
+
+1. Left arrow key: Move the player left
+2. Right arrow key: Move the player right
+3. F key: Shoot enemies
+4. Space key: Jump
+
 ## Attribution
 
 - Background image from [Freepik](https://www.freepik.com/free-vector/tropical-beach-landscape-with-palm-trees-golden-sand-rocks-blue-water-sky-with-fluffy-clouds-beautiful-paradise-seaside-island-ocean-game-location-cartoon-2d-vector-illustration_26177901.htm)
