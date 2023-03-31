@@ -72,7 +72,7 @@ class Hero:
             self.stepIndex = 0
 
     def draw(self, win):
-        self.hitbox = (self.x + 15, self.y + 15, 30, 40)
+        self.hitbox = (self.x + 15, self.y + 15, 60, 60)
         pygame.draw.rect(win, (0,0,0), self.hitbox, 1)
         if self.stepIndex >= 7:
             self.stepIndex = 0
@@ -105,7 +105,7 @@ class Hero:
         elif self.cool_down_count > 0:
             self.cool_down_count += 1
 
-    def shoot(self):
+    def fire(self):
         self.cooldown()
         if (userInput[pygame.K_f] and self.cool_down_count == 0):
             bullet = Bullet(self.x, self.y, self.direction())
@@ -119,7 +119,7 @@ class Hero:
 class Bullet:
     def __init__(self, x, y, direction):
         self.x = x + 15
-        self.y = y + 25
+        self.y = y + 35
         self.direction = direction
 
     def draw_bullet(self):
@@ -140,14 +140,14 @@ class Enemy:
         self.y = y
         self.direction = direction
         self.stepIndex = 0
-        self.hitbox = (self.x, self.y, 64, 64) #for health
+        self.hitbox = (self.x, self.y, 120, 120) #for health
 
     def step(self):
         if self.stepIndex >= 7:
             self.stepIndex = 0
 
     def draw(self, win):
-        self.hitbox = (self.x + 15, self.y + 15, 30, 40)
+        self.hitbox = (self.x + 15, self.y + 15, 60, 60)
         pygame.draw.rect(win, (0, 0, 0), self.hitbox, 1)
         self.step()
         if self.direction == left:
@@ -185,7 +185,7 @@ while run:
         if event.type == pygame.QUIT:
             run = False
     userInput = pygame.key.get_pressed()
-    player.shoot()
+    player.fire()
     player.move_hero(userInput)
     player.jump_motion(userInput)
     if len(enemies) == 0:
