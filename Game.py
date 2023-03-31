@@ -45,6 +45,9 @@ right_enemy = [pygame.image.load(os.path.join("Assets/Enemy", "R1E.png")),
 bullet_img = pygame.transform.scale(pygame.image.load(os.path.join("Assets/Bullet", "bullet.png")), (10, 10))
 background = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "Background.jpg")), (win_width, win_height))
 tower = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "lighthouse.png")), (200,200))
+music = pygame.mixer.music.load(os.path.join("Assets/Audio", "Pirate1_Theme1.mp3"))
+pop_sound = pygame.mixer.Sound(os.path.join("Assets/Audio", "pop.ogg"))
+pygame.mixer.music.play(-1)
 
 class Hero:
     def __init__(self, x, y):
@@ -106,7 +109,7 @@ class Hero:
             return -1
 
     def cooldown(self):
-        if self.cool_down_count >= 20:
+        if self.cool_down_count >= 10:
             self.cool_down_count = 0
         elif self.cool_down_count > 0:
             self.cool_down_count += 1
@@ -115,6 +118,7 @@ class Hero:
         self.hit()
         self.cooldown()
         if (userInput[pygame.K_f] and self.cool_down_count == 0):
+            pop_sound.play()
             bullet = Bullet(self.x, self.y, self.direction())
             self.bullets.append(bullet)
             self.cool_down_count = 1
@@ -149,13 +153,15 @@ class Bullet:
     def off_screen(self):
         return not (self.x >= 0 and self.x <= win_width)
 
+
 class Enemy:
     def __init__(self, x, y, speed):
         self.x = x
         self.y = y
         self.speed = speed
         self.stepIndex = 0
-        self.hitbox = (self.x, self.y, 64, 64) # Health
+        # Health
+        self.hitbox = (self.x, self.y, 64, 64)
         self.health = 30
 
     def step(self):
@@ -175,6 +181,7 @@ class Enemy:
         self.hit()
         self.x -= speed
 
+
     def hit(self):
         if player.hitbox[0] < enemy.x + 32 < player.hitbox[0] + player.hitbox[2] and player.hitbox[1] < enemy.y + 32 < \
                 player.hitbox[1] + player.hitbox[3]:
@@ -190,6 +197,7 @@ class Enemy:
         return not (self.x >= -50 and self.x <= win_width + 50)
 
 def draw_game():
+    global tower_health, speed
     win.fill((0, 0, 0))
     win.blit(background, (0, 0))
     player.draw(win)
@@ -197,11 +205,11 @@ def draw_game():
         bullet.draw_bullet()
     for enemy in enemies:
         enemy.draw(win)
-    win.blit(tower, (-50, 170))
+    win.blit(tower, (-50, 190))
     if player.alive == False:
         win.fill((0, 0, 0))
         font = pygame.font.Font("PirataOne-Regular.ttf", 32)
-        text = font.render('You Died! Press R to restart', True, (165, 42, 42))
+        text = font.render('Ahoy matey! Ye be dead! Press the letter R to start anew!', True, (165, 42, 42))
         textRect = text.get_rect()
         textRect.center = (win_width // 2, win_height // 2)
         win.blit(text, textRect)
@@ -209,6 +217,24 @@ def draw_game():
             player.alive = True
             player.lives = 1
             player.health = 30
+            tower_health = 2
+            speed = 2
+    if player.alive == False:
+        win.fill((0, 0, 0))
+        font = pygame.font.Font("PirataOne-Regular.ttf", 32)
+        if tower_health <= 0:
+            text = font.render('Yarr tower be destroyed, matey! Press the letter R to start anew!', True, (165, 42, 42))
+        else:
+            text = font.render('Ahoy matey! Ye be dead! Press the letter R to start anew!', True, (165, 42, 42))
+        textRect = text.get_rect()
+        textRect.center = (win_width // 2, win_height // 2)
+        win.blit(text, textRect)
+        if userInput[pygame.K_r]:
+            player.alive = True
+            player.lives = 1
+            player.health = 30
+            tower_health = 2
+            speed = 2
     font = pygame.font.Font("PirataOne-Regular.ttf", 32)
     text = font.render('Lives: ' + str(player.lives) + ' | Tower Health: '+ str(tower_health) + ' |Kills: '+ str(kills), True, (165, 42, 42))
     win.blit(text, (150, 20))
@@ -217,9 +243,9 @@ def draw_game():
 
 player = Hero(250, 290)
 enemies = []
-speed = 3
+speed = 2
 kills = 0
-tower_health = 5
+tower_health = 2
 
 run = True
 while run:
@@ -230,11 +256,13 @@ while run:
     player.shoot()
     player.move_hero(userInput)
     player.jump_motion(userInput)
+    if tower_health == 0:
+        player.alive = False
     if len(enemies) == 0:
         enemy = Enemy(750, 300, speed)
         enemies.append(enemy)
         if speed <= 10:
-            speed += 1
+            speed += 0.25
     for enemy in enemies:
         enemy.move()
         if enemy.off_screen() or enemy.health == 0:
