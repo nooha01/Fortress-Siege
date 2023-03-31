@@ -1,7 +1,7 @@
 import pygame
 
 pygame.init()
-win = pygame.display.set_mode((500, 500))
+win = pygame.display.set_mode((1000, 500))
 pygame.display.set_caption("Fortress Siege")
 x = y = 250
 radius = 15
@@ -9,7 +9,10 @@ run = True
 vel_x = 10
 vel_y = 10
 jump = False
-
+i = 0
+width = 1000
+bg_img = pygame.image.load('Background.png')
+bg = pygame.transform.scale(bg_img, (1000, 500))
 while run:
     win.fill((0, 0, 0))
 
@@ -17,7 +20,14 @@ while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-
+    win.fill((0, 0, 0))
+    win.blit(bg, (i, 0))
+    win.blit(bg, (i+width, 0))
+    i -= 1
+    if i == -width:
+        win.blit(bg, (i+width, 0))
+        i = 0
+    
     #movement        
     userInput = pygame.key.get_pressed()
     if userInput[pygame.K_LEFT] and x>0:
