@@ -42,6 +42,7 @@ right_enemy = [pygame.image.load(os.path.join("Assets/Enemy", "R1E.png")),
         pygame.image.load(os.path.join("Assets/Enemy", "R6E.png")),
         pygame.image.load(os.path.join("Assets/Enemy", "R7E.png"))
         ]
+
 bullet_img = pygame.transform.scale(pygame.image.load(os.path.join("Assets/Bullet", "bullet.png")), (10, 10))
 background = pygame.transform.scale(pygame.image.load(os.path.join("Assets", "Background.jpg")), (win_width, win_height))
 
@@ -58,6 +59,9 @@ class Hero:
         self.bullets = []
         self.cool_down_count = 0
         self.hitbox = (self.x, self.y, 64, 64)
+        self.health = 30
+        self.lives = 1
+        self.alive = True
 
     def move_hero(self, userInput):
         if userInput[pygame.K_RIGHT] and self.x <= win_width - 62:
@@ -73,7 +77,9 @@ class Hero:
 
     def draw(self, win):
         self.hitbox = (self.x + 15, self.y + 15, 60, 60)
-        pygame.draw.rect(win, (0,0,0), self.hitbox, 1)
+        pygame.draw.rect(win, (255, 0, 0), (self.x + 15, self.y, 30, 10))
+        if self.health >= 0:
+            pygame.draw.rect(win, (0, 255, 0), (self.x + 15, self.y, self.health, 10))
         if self.stepIndex >= 7:
             self.stepIndex = 0
         if self.face_left:
@@ -106,6 +112,7 @@ class Hero:
             self.cool_down_count += 1
 
     def fire(self):
+        self.hit()
         self.cooldown()
         if (userInput[pygame.K_f] and self.cool_down_count == 0):
             bullet = Bullet(self.x, self.y, self.direction())
@@ -116,10 +123,17 @@ class Hero:
             if bullet.off_screen():
                 self.bullets.remove(bullet)
 
+    def hit(self):
+        for enemy in enemies:
+            for bullet in self.bullets:
+                if enemy.hitbox[0] < bullet.x < enemy.hitbox[0] + enemy.hitbox[2] and enemy.hitbox[1] < bullet.y < enemy.hitbox[1] + enemy.hitbox[3]:
+                    enemy.health -= 1
+                    player.bullets.remove(bullet)
+
 class Bullet:
     def __init__(self, x, y, direction):
         self.x = x + 15
-        self.y = y + 35
+        self.y = y + 40
         self.direction = direction
 
     def draw_bullet(self):
@@ -140,15 +154,18 @@ class Enemy:
         self.y = y
         self.direction = direction
         self.stepIndex = 0
-        self.hitbox = (self.x, self.y, 120, 120) #for health
+        self.hitbox = (self.x, self.y, 64, 64) #Health
+        self.health = 30
 
     def step(self):
         if self.stepIndex >= 7:
             self.stepIndex = 0
 
     def draw(self, win):
-        self.hitbox = (self.x + 15, self.y + 15, 60, 60)
-        pygame.draw.rect(win, (0, 0, 0), self.hitbox, 1)
+        self.hitbox = (self.x + 20, self.y + 10, 60, 60)
+        pygame.draw.rect(win, (255, 0, 0), (self.x +15, self.y, 30, 10))
+        if self.health >= 0:
+            pygame.draw.rect(win, (0, 255, 0), (self.x + 15, self.y, self.health, 10))
         self.step()
         if self.direction == left:
             win.blit(left_enemy[self.stepIndex//3], (self.x, self.y))
@@ -157,47 +174,96 @@ class Enemy:
         self.stepIndex += 1
 
     def move(self):
+        self.hit()
         if self.direction == left:
             self.x -= 3
         if self.direction == right:
             self.x += 3
 
+    def hit(self):
+        if player.hitbox[0] < enemy.x + 32 < player.hitbox[0] + player.hitbox[2] and player.hitbox[1] < enemy.y + 32 <player.hitbox[1] + player.hitbox[3]:
+            if player.health >0:
+                player.health -= 1
+                if player.health == 0 and player.lives > 0:
+                    player.lives -= 1
+                    player.health = 30
+                elif player.health == 0 and player.lives == 0:
+                    player.alive = False
+
     def off_screen(self):
         return not(self.x >= -50 and self.x <= win_width + 50)
 
+
+# Draw Game
 def draw_game():
     win.fill((0, 0, 0))
     win.blit(background, (0,0))
+    # Draw Player
     player.draw(win)
+    # Draw Bullets
     for bullet in player.bullets:
         bullet.draw_bullet()
+    # Draw Enemies
     for enemy in enemies:
         enemy.draw(win)
+    # Player Health
+    if player.alive == False:
+        win.fill((0,0,0))
+        font = pygame.font.Font('freesansbold.ttf', 32)
+        text = font.render('You Died! Press R to restart', True, (255, 255, 255))
+        textRect = text.get_rect()
+        textRect.center = (win_width//2, win_height//2)
+        win.blit(text, textRect)
+        if userInput[pygame.K_r]:
+            player.alive = True
+            player.lives = 1
+            player.health = 30
+
+    font = pygame.font.Font('freesansbold.ttf', 32)
+    text = font.render('Lives: '+ str(player.lives), True, (0,0,0))
+    win.blit(text, (650, 20))
+    # Delay and Update
     pygame.time.delay(30)
     pygame.display.update()
 
-player = Hero(250, 270)
+# Instance of Hero-Class
+player = Hero(250, 290)
+
+# Instance of Enemy-Class
 enemies = []
 
+# Mainloop
 run = True
 while run:
+
+    # Quit Game
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+
+    # Input
     userInput = pygame.key.get_pressed()
+
+    # fire
     player.fire()
+
+    # Movement
     player.move_hero(userInput)
     player.jump_motion(userInput)
+
+    # Enemy
     if len(enemies) == 0:
         rand_nr = random.randint(0,1)
         if rand_nr == 1:
-            enemy = Enemy(750, 280, left)
+            enemy = Enemy(750, 300, left)
             enemies.append(enemy)
         if rand_nr == 0:
-            enemy = Enemy(50, 280, right)
+            enemy = Enemy(50, 300, right)
             enemies.append(enemy)
     for enemy in enemies:
         enemy.move()
         if enemy.off_screen():
             enemies.remove(enemy)
+
+    # Draw Game in Window
     draw_game()
