@@ -4,7 +4,7 @@ Fortress-Siege is a tower defense game where players must protect their fortress
 
 ## Demo
 
-Insert gif or link to demo
+![Demo for Fortress Siege](Demo/demo_gif.gif)
 
 ## Tech Stack
 
